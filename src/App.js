@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Children, useState } from "react";
 
 const tempMovieData = [
   {
@@ -52,11 +52,36 @@ const average = (arr) =>
 
 export default function App() {
   const [movies, setMovies] = useState(tempMovieData);
+  const [watched, setWatched] = useState(tempWatchedData);
 
   return (
     <>
-      <NavBar movies={movies}></NavBar>
-      <Main movies={movies}></Main>
+      <NavBar>
+        <Search></Search>
+        <NumResults movies={movies}></NumResults>
+      </NavBar>
+
+      <Main>
+        {/* <Box elt={<MovieList movies={movies}></MovieList>}></Box>
+
+        <Box
+          elt={
+            <>
+              <WatchedSummary watched={watched}></WatchedSummary>
+              <WatchedList watched={watched}></WatchedList>>
+            </>
+          }
+        ></Box> */}
+
+        <Box>
+          <MovieList movies={movies}></MovieList>
+        </Box>
+
+        <Box>
+          <WatchedSummary watched={watched}></WatchedSummary>
+          <WatchedList watched={watched}></WatchedList>
+        </Box>
+      </Main>
     </>
   );
 }
@@ -69,25 +94,76 @@ function Button({ isOpen, setIsOpen }) {
   );
 }
 
-function Main({ movies }) {
+function NavBar({ children }) {
   return (
-    <main className="main">
-      <ListBox movies={movies}></ListBox>
-      <WatchedBox></WatchedBox>
-    </main>
+    <nav className="nav-bar">
+      <Logo></Logo>
+      {children}
+    </nav>
   );
 }
 
-function ListBox({ movies }) {
-  const [isOpen1, setIsOpen1] = useState(true);
-
+function Logo() {
   return (
-    <div className="box">
-      <Button isOpen={isOpen1} setIsOpen={setIsOpen1}></Button>
-      {isOpen1 && <MovieList movies={movies}></MovieList>}
+    <div className="logo">
+      <span role="img">🍿</span>
+      <h1>usePopcorn</h1>
     </div>
   );
 }
+
+function Search() {
+  const [query, setQuery] = useState("");
+  return (
+    <input
+      className="search"
+      type="text"
+      placeholder="Search movies..."
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+    />
+  );
+}
+
+function NumResults({ movies }) {
+  return (
+    <p className="num-results">
+      Found <strong>{movies.length}</strong> results
+    </p>
+  );
+}
+
+function Main({ children }) {
+  return <main className="main">{children}</main>;
+}
+
+function Box({ children }) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  return (
+    <div className="box">
+      <Button isOpen={isOpen} setIsOpen={setIsOpen}></Button>
+      {isOpen && children}
+    </div>
+  );
+}
+
+// function WatchedBox() {
+//   const [isOpen2, setIsOpen2] = useState(true);
+//   const [watched, setWatched] = useState(tempWatchedData);
+
+//   return (
+//     <div className="box">
+//       <Button isOpen={isOpen2} setIsOpen={setIsOpen2}></Button>
+//       {isOpen2 && (
+//         <>
+//           <WatchedSummary watched={watched}></WatchedSummary>
+//           <WatchedList watched={watched}></WatchedList>
+//         </>
+//       )}
+//     </div>
+//   );
+// }
 
 function MovieList({ movies }) {
   return (
@@ -111,23 +187,6 @@ function Movie({ movie }) {
         </p>
       </div>
     </li>
-  );
-}
-
-function WatchedBox() {
-  const [isOpen2, setIsOpen2] = useState(true);
-  const [watched, setWatched] = useState(tempWatchedData);
-
-  return (
-    <div className="box">
-      <Button isOpen={isOpen2} setIsOpen={setIsOpen2}></Button>
-      {isOpen2 && (
-        <>
-          <WatchedSummary watched={watched}></WatchedSummary>
-          <WatchedList watched={watched}></WatchedList>
-        </>
-      )}
-    </div>
   );
 }
 
@@ -191,45 +250,5 @@ function WatchedMovie({ movie }) {
         </p>
       </div>
     </li>
-  );
-}
-
-function NavBar({ movies }) {
-  return (
-    <nav className="nav-bar">
-      <Logo></Logo>
-      <Search></Search>
-      <NumResults movies={movies}></NumResults>
-    </nav>
-  );
-}
-
-function Logo() {
-  return (
-    <div className="logo">
-      <span role="img">🍿</span>
-      <h1>usePopcorn</h1>
-    </div>
-  );
-}
-
-function Search() {
-  const [query, setQuery] = useState("");
-  return (
-    <input
-      className="search"
-      type="text"
-      placeholder="Search movies..."
-      value={query}
-      onChange={(e) => setQuery(e.target.value)}
-    />
-  );
-}
-
-function NumResults({ movies }) {
-  return (
-    <p className="num-results">
-      Found <strong>{movies.length}</strong> results
-    </p>
   );
 }
