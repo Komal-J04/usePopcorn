@@ -57,43 +57,54 @@ export default function App() {
   const [watched, setWatched] = useState(tempWatchedData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const query = "quedjnkvry";
+  const [query, setQuery] = useState("");
 
   //the useEffect hook registers(the code should not run when the component renders but after it has been painted onto the screen - executed after render) an effect
   //the function(1st argument) is called effect and it contains the code that we want to run as a side effect, 2nd argument-dependency array
-  useEffect(function () {
-    async function movieFetch() {
-      try {
-        setLoading(true);
+  useEffect(
+    function () {
+      async function movieFetch() {
+        try {
+          setLoading(true);
+          setError("");
 
-        const res = await fetch(
-          `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
-        );
+          const res = await fetch(
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+          );
 
-        if (!res.ok)
-          throw new Error("Something went wrong with fetching movies");
+          if (!res.ok)
+            throw new Error("Something went wrong with fetching movies");
 
-        const data = await res.json();
+          const data = await res.json();
+          console.log(data);
 
-        if (data.Response === "False") throw new Error("Movie not found");
+          if (data.Response === "False") throw new Error("Movie not found");
 
-        setMovies(data.Search);
-      } catch (err) {
-        console.error(err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+          setMovies(data.Search);
+        } catch (err) {
+          console.error(err);
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
       }
-    }
 
-    movieFetch();
-  }, []);
-  //empty array means that the effect will only be executed when the component first mounts
+      if (!query.length) {
+        setMovies([]);
+        setError("");
+        return;
+      }
+
+      movieFetch();
+    },
+    [query]
+  );
+  //dependency array - tells react when to run the effect,effect is executed whenever 1 of the dependencies changes
 
   return (
     <>
       <NavBar>
-        <Search></Search>
+        <Search query={query} setQuery={setQuery}></Search>
         <NumResults movies={movies}></NumResults>
       </NavBar>
 
@@ -157,8 +168,7 @@ function Logo() {
   );
 }
 
-function Search() {
-  const [query, setQuery] = useState("");
+function Search({ query, setQuery }) {
   return (
     <input
       className="search"
