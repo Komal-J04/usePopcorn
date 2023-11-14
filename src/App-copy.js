@@ -1,4 +1,4 @@
-import { Children, useEffect, useState } from "react";
+import { Children, useState } from "react";
 
 const tempMovieData = [
   {
@@ -50,45 +50,9 @@ const tempWatchedData = [
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
-const KEY = "e04ae0d9";
-
 export default function App() {
-  const [movies, setMovies] = useState([]);
+  const [movies, setMovies] = useState(tempMovieData);
   const [watched, setWatched] = useState(tempWatchedData);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const query = "quedjnkvry";
-
-  //the useEffect hook registers(the code should not run when the component renders but after it has been painted onto the screen - executed after render) an effect
-  //the function(1st argument) is called effect and it contains the code that we want to run as a side effect, 2nd argument-dependency array
-  useEffect(function () {
-    async function movieFetch() {
-      try {
-        setLoading(true);
-
-        const res = await fetch(
-          `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
-        );
-
-        if (!res.ok)
-          throw new Error("Something went wrong with fetching movies");
-
-        const data = await res.json();
-
-        if (data.Response === "False") throw new Error("Movie not found");
-
-        setMovies(data.Search);
-      } catch (err) {
-        console.error(err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    movieFetch();
-  }, []);
-  //empty array means that the effect will only be executed when the component first mounts
 
   return (
     <>
@@ -110,16 +74,7 @@ export default function App() {
         ></Box> */}
 
         <Box>
-          {/* {loading ? (
-            <Loader></Loader>
-          ) : !error ? (
-            <MovieList movies={movies}></MovieList>
-          ) : (
-            <ErrorMessage></ErrorMessage>
-          )} */}
-          {loading && <Loader></Loader>}
-          {!loading && !error && <MovieList movies={movies}></MovieList>}
-          {error && <ErrorMessage msg={error}></ErrorMessage>}
+          <MovieList movies={movies}></MovieList>
         </Box>
 
         <Box>
@@ -174,19 +129,6 @@ function NumResults({ movies }) {
   return (
     <p className="num-results">
       Found <strong>{movies.length}</strong> results
-    </p>
-  );
-}
-
-function Loader() {
-  return <p className="loader">Loading...</p>;
-}
-
-function ErrorMessage({ msg }) {
-  return (
-    <p className="error">
-      <span>⛔</span>
-      {msg}
     </p>
   );
 }
