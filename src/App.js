@@ -9,11 +9,15 @@ const KEY = "e04ae0d9";
 
 export default function App() {
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("");
+
+  // const [watched, setWatched] = useState([]);
+  const [watched, setWatched] = useState(function () {
+    return JSON.parse(localStorage.getItem("watched"));
+  });
 
   function handleSelect(id) {
     setSelected((selected) => (id === selected ? null : id));
@@ -27,10 +31,16 @@ export default function App() {
   function handleAddWatch(movie) {
     setWatched((watched) => [...watched, movie]);
     setSelected(null);
+
+    // by event handler
+    // localStorage.setItem("watched", watched); //stale state
+    // localStorage.setItem("watched", JSON.stringify([...watched, movie]));
   }
 
   function handleDeleteWatched(id) {
     setWatched((watched) => watched.filter((watched) => watched.imdbID !== id));
+
+    // localStorage.setItem("watched", JSON.stringify([...watched, movie]));
   }
 
   //the useEffect hook registers(the code should not run when the component renders but after it has been painted onto the screen - executed after render) an effect
@@ -83,6 +93,13 @@ export default function App() {
     [query]
   );
   //dependency array - tells react when to run the effect,effect is executed whenever 1 of the dependencies changes
+
+  useEffect(
+    function () {
+      localStorage.setItem("watched", JSON.stringify(watched));
+    },
+    [watched]
+  );
 
   return (
     <>
