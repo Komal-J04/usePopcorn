@@ -1,5 +1,6 @@
 import { Children, useEffect, useState } from "react";
 import StarRating from "./StarRating.jsx";
+import { cleanup } from "@testing-library/react";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
@@ -20,6 +21,7 @@ export default function App() {
 
   function handleCloseMovie() {
     setSelected(null);
+    // document.title = "usePopcorn";
   }
 
   function handleAddWatch(movie) {
@@ -35,20 +37,22 @@ export default function App() {
   //the function(1st argument) is called effect and it contains the code that we want to run as a side effect, 2nd argument-dependency array
   useEffect(
     function () {
+      const controller = new AbortController(); //it is a native browser api which is to be used in the cleanup function
+
       async function movieFetch() {
         try {
           setLoading(true);
           setError("");
 
           const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+            { signal: controller.signal } //connect abort controller with the fetch
           );
 
           if (!res.ok)
             throw new Error("Something went wrong with fetching movies");
 
           const data = await res.json();
-          // console.log(data);
 
           if (data.Response === "False") throw new Error("Movie not found");
 
@@ -67,7 +71,14 @@ export default function App() {
         return;
       }
 
+      //close any open movie before searching for a new one
+      handleCloseMovie();
       movieFetch();
+
+      //this works because each time there is a new alphabet=>re-render; the cleanup function would be called which will abort the request
+      return function () {
+        controller.abort();
+      };
     },
     [query]
   );
@@ -269,9 +280,12 @@ function SelectedMovie({
           const data = await res.json();
 
           setMovie(data);
+          setError("");
         } catch (err) {
-          console.error(err);
-          setError(error);
+          if (err.name !== "AbortError") {
+            console.log(err);
+            setError(error);
+          }
         } finally {
           setLoading(false);
         }
@@ -280,6 +294,42 @@ function SelectedMovie({
       getMovieDetails();
     },
     [selectedId]
+  );
+
+  useEffect(
+    function () {
+      if (!movie.Title) return;
+      document.title = `MOVIE | ${movie.Title}`;
+
+      //cleanup function - a function that is returned from the effect
+      return function () {
+        document.title = "usePopcorn";
+
+        //closure - a fn always remembers all the variables that were present at the time and place that the fn was created
+        // console.log(`Cleanup effect for ${movie.Title}`);
+      };
+    },
+
+    [movie]
+  );
+
+  //attach an event listener to the entire document to react to a keypress event; touching the DOM directly(side effect)=>useEffect needed
+  //we want this effect to happen only if there is some movie details open, else no
+  useEffect(
+    function () {
+      function callback(e) {
+        if (e.code === "Escape") {
+          handleCloseMovie();
+        }
+      }
+
+      document.addEventListener("keydown", callback);
+
+      return function () {
+        document.removeEventListener("keydown", callback);
+      };
+    },
+    [handleCloseMovie]
   );
 
   return (
