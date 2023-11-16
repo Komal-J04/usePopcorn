@@ -1,6 +1,9 @@
 import { Children, useEffect, useRef, useState } from "react";
 import StarRating from "./StarRating.jsx";
 import { cleanup } from "@testing-library/react";
+import { useMovies } from "./hooks/useMovies.js";
+import { useLocalStorageState } from "./hooks/useLocalStorageState.js";
+import { useKey } from "./hooks/useKey.js";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
@@ -8,16 +11,12 @@ const average = (arr) =>
 const KEY = "e04ae0d9";
 
 export default function App() {
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("");
 
-  // const [watched, setWatched] = useState([]);
-  const [watched, setWatched] = useState(function () {
-    return JSON.parse(localStorage.getItem("watched"));
-  });
+  const [movies, error, loading] = useMovies(query, handleCloseMovie, KEY);
+
+  const [watched, setWatched] = useLocalStorageState([], "watched");
 
   function handleSelect(id) {
     setSelected((selected) => (id === selected ? null : id));
@@ -42,64 +41,6 @@ export default function App() {
 
     // localStorage.setItem("watched", JSON.stringify([...watched, movie]));
   }
-
-  //the useEffect hook registers(the code should not run when the component renders but after it has been painted onto the screen - executed after render) an effect
-  //the function(1st argument) is called effect and it contains the code that we want to run as a side effect, 2nd argument-dependency array
-  useEffect(
-    function () {
-      const controller = new AbortController(); //it is a native browser api which is to be used in the cleanup function
-
-      async function movieFetch() {
-        try {
-          setLoading(true);
-          setError("");
-
-          const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
-            { signal: controller.signal } //connect abort controller with the fetch
-          );
-
-          if (!res.ok)
-            throw new Error("Something went wrong with fetching movies");
-
-          const data = await res.json();
-
-          if (data.Response === "False") throw new Error("Movie not found");
-
-          setMovies(data.Search);
-        } catch (err) {
-          console.error(err);
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
-      }
-
-      if (!query.length) {
-        setMovies([]);
-        setError("");
-        return;
-      }
-
-      //close any open movie before searching for a new one
-      handleCloseMovie();
-      movieFetch();
-
-      //this works because each time there is a new alphabet=>re-render; the cleanup function would be called which will abort the request
-      return function () {
-        controller.abort();
-      };
-    },
-    [query]
-  );
-  //dependency array - tells react when to run the effect,effect is executed whenever 1 of the dependencies changes
-
-  useEffect(
-    function () {
-      localStorage.setItem("watched", JSON.stringify(watched));
-    },
-    [watched]
-  );
 
   return (
     <>
@@ -180,25 +121,13 @@ function Search({ query, setQuery }) {
   }, []);
   */
 
-  const inputElt = useRef(null);
+  const inputElt = useRef(".search");
 
-  useEffect(
-    function () {
-      function callback(e) {
-        if (document.activeElement === inputElt.current) return;
-
-        if (e.code === "Enter") {
-          inputElt.current.focus();
-          setQuery("");
-        }
-      }
-
-      document.addEventListener("keydown", callback);
-
-      return () => document.addEventListener("keydown", callback);
-    },
-    [setQuery]
-  );
+  useKey("enter", function () {
+    if (document.activeElement === inputElt.current) return;
+    inputElt.current.focus();
+    setQuery("");
+  });
 
   return (
     <input
@@ -370,24 +299,10 @@ function SelectedMovie({
     [movie]
   );
 
+  useKey("Escape", handleCloseMovie);
+
   //attach an event listener to the entire document to react to a keypress event; touching the DOM directly(side effect)=>useEffect needed
-  //we want this effect to happen only if there is some movie details open, else no
-  useEffect(
-    function () {
-      function callback(e) {
-        if (e.code === "Escape") {
-          handleCloseMovie();
-        }
-      }
-
-      document.addEventListener("keydown", callback);
-
-      return function () {
-        document.removeEventListener("keydown", callback);
-      };
-    },
-    [handleCloseMovie]
-  );
+  //we want this effect to happen only if there is some movie details open, else no thats why it is included in this component
 
   return (
     <>
