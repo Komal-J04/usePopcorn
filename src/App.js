@@ -1,4 +1,4 @@
-import { Children, useEffect, useState } from "react";
+import { Children, useEffect, useRef, useState } from "react";
 import StarRating from "./StarRating.jsx";
 import { cleanup } from "@testing-library/react";
 
@@ -171,6 +171,35 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
+  /*
+  // not the react way of doing things; also if there was some dependency, it would re-render everytime which is not ideal
+  useEffect(function () {
+    // const elt = document.querySelector(".search");
+    // console.log(elt);
+    // elt.focus();
+  }, []);
+  */
+
+  const inputElt = useRef(null);
+
+  useEffect(
+    function () {
+      function callback(e) {
+        if (document.activeElement === inputElt.current) return;
+
+        if (e.code === "Enter") {
+          inputElt.current.focus();
+          setQuery("");
+        }
+      }
+
+      document.addEventListener("keydown", callback);
+
+      return () => document.addEventListener("keydown", callback);
+    },
+    [setQuery]
+  );
+
   return (
     <input
       className="search"
@@ -178,6 +207,7 @@ function Search({ query, setQuery }) {
       placeholder="Search movies..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
+      ref={inputElt}
     />
   );
 }
@@ -267,6 +297,15 @@ function SelectedMovie({
     (movie) => movie.imdbID === selectedId
   )?.rating;
 
+  const countRef = useRef(0);
+
+  useEffect(
+    function () {
+      if (rating) countRef.current++;
+    },
+    [rating]
+  );
+
   function handleAdd() {
     const newWatchedMovie = {
       imdbID: selectedId,
@@ -276,6 +315,7 @@ function SelectedMovie({
       imdbRating: Number(movie.imdbRating),
       Runtime: Number(movie.Runtime.split(" ")[0]),
       rating,
+      countRatingDecisions: countRef.current,
     };
 
     handleAddWatch(newWatchedMovie);
